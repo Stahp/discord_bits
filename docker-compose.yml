@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: discord_bits_postgres
+    environment:
+      POSTGRES_USER: discord_bits
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: discord_bits_bot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U discord_bits"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    container_name: discord_bits_bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DATABASE_URL: postgresql://discord_bits:${POSTGRES_PASSWORD:-changeme}@postgres:5432/discord_bits_bot
+      DAILY_REWARD_AMOUNT: ${DAILY_REWARD_AMOUNT:-100}
+      STARTING_BALANCE: ${STARTING_BALANCE:-1000}
+      MIN_BET_AMOUNT: ${MIN_BET_AMOUNT:-10}
+      ADMIN_ROLE_IDS: ${ADMIN_ROLE_IDS:-}
+    restart: unless-stopped
+    volumes:
+      - ./database/migrations:/app/database/migrations:ro
+
+volumes:
+  postgres_data:
+
