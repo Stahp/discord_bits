@@ -5,8 +5,9 @@ from sqlalchemy.engine import Connection
 
 from alembic import context
 
-# Import your models and config
+# Import your models
 import sys
+import os
 from pathlib import Path
 # Add project root and src to path
 project_root = Path(__file__).resolve().parent.parent
@@ -14,7 +15,9 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
 from src.database.models import Base
-from src import config
+
+# Get database URL from environment (don't import config to avoid DISCORD_TOKEN requirement)
+database_url = os.getenv("DATABASE_URL", "postgresql://localhost/discord_bits_bot")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -29,9 +32,8 @@ if alembic_cfg.config_file_name is not None:
 # for 'autogenerate' support
 target_metadata = Base.metadata
 
-# Set the database URL from config
+# Set the database URL
 # Use sync URL for Alembic (it uses sync connections)
-database_url = config.DATABASE_URL
 # Ensure we use psycopg2 (sync), not asyncpg
 sync_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
 alembic_cfg.set_main_option("sqlalchemy.url", sync_url)

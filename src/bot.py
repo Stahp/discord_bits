@@ -4,7 +4,6 @@ import logging
 import discord
 from discord.ext import commands
 from src import config
-from src.database.migrations import run_migrations
 
 # Set up logging
 logging.basicConfig(
@@ -31,13 +30,6 @@ async def on_ready():
     """Called when the bot is ready."""
     logger.info(f'{bot.user} has connected to Discord!')
     logger.info(f'Bot is in {len(bot.guilds)} guild(s)')
-    
-    # Run database migrations
-    try:
-        await run_migrations()
-    except Exception as e:
-        logger.error(f"Failed to run database migrations: {e}")
-        raise
     
     # Load cogs
     cogs_to_load = [

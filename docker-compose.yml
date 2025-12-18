@@ -13,10 +13,22 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U discord_bits"]
+      test: ["CMD-SHELL", "pg_isready -U discord_bits -d discord_bits_bot"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  migrations:
+    build: .
+    container_name: discord_bits_migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      DATABASE_URL: postgresql://discord_bits:${POSTGRES_PASSWORD:-changeme}@postgres:5432/discord_bits_bot
+    command: sh -c "python -m alembic upgrade head && echo 'Migrations completed successfully'"
+    restart: "no"
 
   bot:
     build: .
@@ -24,6 +36,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DATABASE_URL: postgresql://discord_bits:${POSTGRES_PASSWORD:-changeme}@postgres:5432/discord_bits_bot
@@ -32,8 +46,6 @@ services:
       MIN_BET_AMOUNT: ${MIN_BET_AMOUNT:-10}
       ADMIN_ROLE_IDS: ${ADMIN_ROLE_IDS:-}
     restart: unless-stopped
-    volumes:
-      - ./database/migrations:/app/database/migrations:ro
 
 volumes:
   postgres_data:
