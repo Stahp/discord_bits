@@ -1,9 +1,9 @@
 """SQLAlchemy models for the Discord Bits Wagering Bot."""
 from sqlalchemy import (
-    BigInteger, Integer, Text, TIMESTAMP, Enum, ForeignKey,
+    BigInteger, Integer, Text, TIMESTAMP, ForeignKey,
     func, CheckConstraint, Column
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, ENUM
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
@@ -54,7 +54,7 @@ class Wager(Base):
     title = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     options = Column(JSONB, nullable=False)  # Array of choice options
-    status = Column(Enum(WagerStatus), default=WagerStatus.OPEN, nullable=False)
+    status = Column(ENUM(WagerStatus, name='wagerstatus', create_type=False), default=WagerStatus.OPEN, nullable=False)
     winning_option = Column(Integer, nullable=True)
     message_id = Column(BigInteger, nullable=True)  # Discord message ID of pinned wager message
     channel_id = Column(BigInteger, nullable=True)  # Discord channel ID where message is posted
@@ -100,7 +100,7 @@ class Transaction(Base):
     transaction_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.user_id"), nullable=False)
     amount = Column(Integer, nullable=False)  # Positive for credits, negative for debits
-    transaction_type = Column(Enum(TransactionType), nullable=False)
+    transaction_type = Column(ENUM(TransactionType, name='transactiontype', create_type=False), nullable=False)
     reference_id = Column(Integer, nullable=True)  # Links to bet_id or wager_id
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
