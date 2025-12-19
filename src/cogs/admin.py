@@ -7,7 +7,11 @@ from sqlalchemy.orm import selectinload
 from datetime import datetime
 from src import config
 from src.database.database import get_session, get_user, update_balance
-from src.database.models import Wager, Bet, WagerStatus, TransactionType, GuildSettings
+from src.database.models import (
+    Wager, Bet, WAGER_STATUS_OPEN, WAGER_STATUS_CLOSED, WAGER_STATUS_RESOLVED,
+    TRANSACTION_TYPE_BET_REFUNDED, TRANSACTION_TYPE_BET_WON, TRANSACTION_TYPE_ADMIN_ADJUSTMENT,
+    GuildSettings
+)
 from src.utils.formatters import format_bits, format_wager_embed
 from src.cogs.betting import update_wager_message
 from sqlalchemy import select
@@ -74,7 +78,7 @@ class AdminCog(commands.Cog):
                     )
                     return
                 
-                if wager.status == WagerStatus.RESOLVED:
+                if wager.status == WAGER_STATUS_RESOLVED:
                     await interaction.response.send_message(
                         "❌ This wager has already been resolved.",
                         ephemeral=True
@@ -111,11 +115,11 @@ class AdminCog(commands.Cog):
                             session,
                             bet.user_id,
                             bet.amount,
-                            TransactionType.BET_REFUNDED,
+                            TRANSACTION_TYPE_BET_REFUNDED,
                             reference_id=bet.bet_id
                         )
                     
-                    wager.status = WagerStatus.RESOLVED
+                    wager.status = WAGER_STATUS_RESOLVED
                     wager.winning_option = option_index
                     wager.resolved_at = datetime.utcnow()
                     await session.commit()
@@ -152,7 +156,7 @@ class AdminCog(commands.Cog):
                         session,
                         bet.user_id,
                         payout,
-                        TransactionType.BET_WON,
+                        TRANSACTION_TYPE_BET_WON,
                         reference_id=bet.bet_id
                     )
                     
@@ -163,7 +167,7 @@ class AdminCog(commands.Cog):
                     })
                 
                 # Update wager status
-                wager.status = WagerStatus.RESOLVED
+                wager.status = WAGER_STATUS_RESOLVED
                 wager.winning_option = option_index
                 wager.resolved_at = datetime.utcnow()
                 await session.commit()
@@ -271,7 +275,7 @@ class AdminCog(commands.Cog):
                     session,
                     user.id,
                     amount,
-                    TransactionType.ADMIN_ADJUSTMENT,
+                    TRANSACTION_TYPE_ADMIN_ADJUSTMENT,
                     reference_id=None
                 )
                 
@@ -318,14 +322,14 @@ class AdminCog(commands.Cog):
                     )
                     return
                 
-                if wager.status != WagerStatus.OPEN:
+                if wager.status != WAGER_STATUS_OPEN:
                     await interaction.response.send_message(
-                        f"❌ This wager is already {wager.status.value}.",
+                        f"❌ This wager is already {wager.status}.",
                         ephemeral=True
                     )
                     return
                 
-                wager.status = WagerStatus.CLOSED
+                wager.status = WAGER_STATUS_CLOSED
                 await session.commit()
                 
                 # Update pinned message if it exists

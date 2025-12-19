@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from src import config
 import logging
 from src.database.database import get_session, get_user
-from src.database.models import Wager, WagerStatus, GuildSettings
+from src.database.models import Wager, WAGER_STATUS_OPEN, GuildSettings
 from src.utils.validators import validate_wager_title, validate_wager_options
 from src.utils.formatters import format_wager_embed, format_bits
 from src.cogs.betting import WagerOptionView, update_wager_message
@@ -185,7 +185,7 @@ class CreateWagerModal(discord.ui.Modal, title="Create New Wager"):
                     title=self.title_input.value,
                     description=self.description_input.value if self.description_input.value else None,
                     options=option_list,
-                    status=WagerStatus.OPEN
+                    status=WAGER_STATUS_OPEN
                 )
                 session.add(wager)
                 await session.commit()
@@ -266,7 +266,7 @@ class WagersCog(commands.Cog):
                 # Get all open wagers
                 result = await session.execute(
                     select(Wager)
-                    .where(Wager.status == WagerStatus.OPEN)
+                    .where(Wager.status == WAGER_STATUS_OPEN)
                     .order_by(Wager.created_at.desc())
                     .limit(20)
                 )

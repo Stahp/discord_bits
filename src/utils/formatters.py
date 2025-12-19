@@ -10,16 +10,16 @@ def format_bits(amount: int) -> str:
 
 def format_wager_embed(wager, bets_by_option=None, show_stats=True) -> discord.Embed:
     """Format a wager as an embed with live betting statistics."""
-    from database.models import WagerStatus
+    from database.models import WAGER_STATUS_OPEN, WAGER_STATUS_RESOLVED
     
     embed = discord.Embed(
         title=f"🎲 {wager.title}",
         description=wager.description or "No description provided.",
-        color=discord.Color.blue() if wager.status == WagerStatus.OPEN else discord.Color.greyple()
+        color=discord.Color.blue() if wager.status == WAGER_STATUS_OPEN else discord.Color.greyple()
     )
     
     embed.add_field(name="Wager ID", value=f"`{wager.wager_id}`", inline=True)
-    embed.add_field(name="Status", value=wager.status.value.upper(), inline=True)
+    embed.add_field(name="Status", value=wager.status.upper(), inline=True)
     embed.add_field(name="Created", value=f"<t:{int(wager.created_at.timestamp())}:R>", inline=True)
     
     # Calculate statistics if bets are provided
@@ -62,7 +62,7 @@ def format_wager_embed(wager, bets_by_option=None, show_stats=True) -> discord.E
             inline=True
         )
     
-    if wager.status == WagerStatus.RESOLVED and wager.winning_option is not None:
+    if wager.status == WAGER_STATUS_RESOLVED and wager.winning_option is not None:
         embed.add_field(
             name="🏆 Winner",
             value=f"Option {wager.winning_option + 1}: {wager.options[wager.winning_option]}",

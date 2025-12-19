@@ -57,7 +57,7 @@ async def on_ready():
     # Register persistent views for existing wagers
     try:
         from src.database.database import get_session
-        from src.database.models import Wager, WagerStatus
+        from src.database.models import Wager, WAGER_STATUS_OPEN
         from sqlalchemy import select
         from src.cogs.betting import WagerOptionView
         
@@ -65,7 +65,7 @@ async def on_ready():
             # Get all open wagers with pinned messages
             result = await session.execute(
                 select(Wager)
-                .where(Wager.status == WagerStatus.OPEN)
+                .where(Wager.status == WAGER_STATUS_OPEN)
                 .where(Wager.message_id.isnot(None))
                 .where(Wager.channel_id.isnot(None))
             )

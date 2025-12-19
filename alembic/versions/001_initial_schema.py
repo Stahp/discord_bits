@@ -21,27 +21,6 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     connection = op.get_bind()
     
-    # Create enum types using raw SQL to avoid duplicate creation issues
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE wagerstatus AS ENUM ('open', 'closed', 'resolved');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """)
-    
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE transactiontype AS ENUM ('daily_reward', 'bet_placed', 'bet_won', 'bet_refunded', 'admin_adjustment');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """)
-    
-    # Create enum objects for use in table definitions (without create_type)
-    wagerstatus_enum = postgresql.ENUM('open', 'closed', 'resolved', name='wagerstatus', create_type=False)
-    transactiontype_enum = postgresql.ENUM('daily_reward', 'bet_placed', 'bet_won', 'bet_refunded', 'admin_adjustment', name='transactiontype', create_type=False)
-    
     # Check if tables exist before creating them (idempotent migration)
     inspector = sa.inspect(connection)
     existing_tables = inspector.get_table_names()
@@ -64,7 +43,7 @@ def upgrade() -> None:
             sa.Column('title', sa.Text(), nullable=False),
             sa.Column('description', sa.Text(), nullable=True),
             sa.Column('options', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-            sa.Column('status', wagerstatus_enum, nullable=False, server_default='open'),
+            sa.Column('status', sa.String(20), nullable=False, server_default='open'),
             sa.Column('winning_option', sa.Integer(), nullable=True),
             sa.Column('message_id', sa.BigInteger(), nullable=True),
             sa.Column('channel_id', sa.BigInteger(), nullable=True),
@@ -96,7 +75,7 @@ def upgrade() -> None:
             sa.Column('transaction_id', sa.Integer(), autoincrement=True, nullable=False),
             sa.Column('user_id', sa.BigInteger(), nullable=False),
             sa.Column('amount', sa.Integer(), nullable=False),
-            sa.Column('transaction_type', transactiontype_enum, nullable=False),
+            sa.Column('transaction_type', sa.String(30), nullable=False),
             sa.Column('reference_id', sa.Integer(), nullable=True),
             sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=False),
             sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
@@ -120,11 +99,3 @@ def downgrade() -> None:
     op.drop_table('bets')
     op.drop_table('wagers')
     op.drop_table('users')
-    
-    # Drop enum types
-    connection = op.get_bind()
-    transactiontype_enum = postgresql.ENUM(name='transactiontype')
-    transactiontype_enum.drop(connection, checkfirst=True)
-    
-    wagerstatus_enum = postgresql.ENUM(name='wagerstatus')
-    wagerstatus_enum.drop(connection, checkfirst=True)

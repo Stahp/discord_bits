@@ -1,30 +1,50 @@
 """SQLAlchemy models for the Discord Bits Wagering Bot."""
 from sqlalchemy import (
-    BigInteger, Integer, Text, TIMESTAMP, ForeignKey,
+    BigInteger, Integer, Text, TIMESTAMP, ForeignKey, String,
     func, CheckConstraint, Column
 )
-from sqlalchemy.dialects.postgresql import JSONB, ENUM
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-import enum
 
 Base = declarative_base()
 
 
-class WagerStatus(enum.Enum):
-    """Wager status enumeration."""
-    OPEN = "open"
-    CLOSED = "closed"
-    RESOLVED = "resolved"
+# Wager status constants
+WAGER_STATUS_OPEN = "open"
+WAGER_STATUS_CLOSED = "closed"
+WAGER_STATUS_RESOLVED = "resolved"
+
+# Transaction type constants
+TRANSACTION_TYPE_DAILY_REWARD = "daily_reward"
+TRANSACTION_TYPE_BET_PLACED = "bet_placed"
+TRANSACTION_TYPE_BET_WON = "bet_won"
+TRANSACTION_TYPE_BET_REFUNDED = "bet_refunded"
+TRANSACTION_TYPE_ADMIN_ADJUSTMENT = "admin_adjustment"
+
+# Valid values for validation
+VALID_WAGER_STATUSES = {WAGER_STATUS_OPEN, WAGER_STATUS_CLOSED, WAGER_STATUS_RESOLVED}
+VALID_TRANSACTION_TYPES = {
+    TRANSACTION_TYPE_DAILY_REWARD,
+    TRANSACTION_TYPE_BET_PLACED,
+    TRANSACTION_TYPE_BET_WON,
+    TRANSACTION_TYPE_BET_REFUNDED,
+    TRANSACTION_TYPE_ADMIN_ADJUSTMENT
+}
 
 
-class TransactionType(enum.Enum):
-    """Transaction type enumeration."""
-    DAILY_REWARD = "daily_reward"
-    BET_PLACED = "bet_placed"
-    BET_WON = "bet_won"
-    BET_REFUNDED = "bet_refunded"
-    ADMIN_ADJUSTMENT = "admin_adjustment"
+def validate_wager_status(status: str) -> str:
+    """Validate wager status value."""
+    if status not in VALID_WAGER_STATUSES:
+        raise ValueError(f"Invalid wager status: {status}. Must be one of {VALID_WAGER_STATUSES}")
+    return status
+
+
+def validate_transaction_type(transaction_type: str) -> str:
+    """Validate transaction type value."""
+    if transaction_type not in VALID_TRANSACTION_TYPES:
+        raise ValueError(f"Invalid transaction type: {transaction_type}. Must be one of {VALID_TRANSACTION_TYPES}")
+    return transaction_type
 
 
 class User(Base):
@@ -54,7 +74,7 @@ class Wager(Base):
     title = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     options = Column(JSONB, nullable=False)  # Array of choice options
-    status = Column(ENUM(WagerStatus, name='wagerstatus', create_type=False), default=WagerStatus.OPEN, nullable=False)
+    status = Column(String(20), default=WAGER_STATUS_OPEN, nullable=False)
     winning_option = Column(Integer, nullable=True)
     message_id = Column(BigInteger, nullable=True)  # Discord message ID of pinned wager message
     channel_id = Column(BigInteger, nullable=True)  # Discord channel ID where message is posted
@@ -66,7 +86,7 @@ class Wager(Base):
     bets = relationship("Bet", back_populates="wager", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Wager(wager_id={self.wager_id}, title={self.title}, status={self.status.value})>"
+        return f"<Wager(wager_id={self.wager_id}, title={self.title}, status={self.status})>"
 
 
 class Bet(Base):
@@ -100,7 +120,7 @@ class Transaction(Base):
     transaction_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.user_id"), nullable=False)
     amount = Column(Integer, nullable=False)  # Positive for credits, negative for debits
-    transaction_type = Column(ENUM(TransactionType, name='transactiontype', create_type=False), nullable=False)
+    transaction_type = Column(String(30), nullable=False)
     reference_id = Column(Integer, nullable=True)  # Links to bet_id or wager_id
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
@@ -108,7 +128,7 @@ class Transaction(Base):
     user = relationship("User", back_populates="transactions")
 
     def __repr__(self):
-        return f"<Transaction(transaction_id={self.transaction_id}, user_id={self.user_id}, amount={self.amount}, type={self.transaction_type.value})>"
+        return f"<Transaction(transaction_id={self.transaction_id}, user_id={self.user_id}, amount={self.amount}, type={self.transaction_type})>"
 
 
 class GuildSettings(Base):

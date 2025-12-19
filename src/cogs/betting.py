@@ -7,7 +7,10 @@ from sqlalchemy.orm import selectinload
 from src import config
 import logging
 from src.database.database import get_session, get_user, update_balance
-from src.database.models import Wager, Bet, WagerStatus, TransactionType
+from src.database.models import (
+    Wager, Bet, WAGER_STATUS_OPEN, WAGER_STATUS_RESOLVED,
+    TRANSACTION_TYPE_BET_PLACED, TRANSACTION_TYPE_BET_WON, TRANSACTION_TYPE_BET_REFUNDED
+)
 from src.utils.validators import validate_bet_amount
 from src.utils.formatters import format_bet_embed, format_bits, format_wager_embed
 
@@ -66,9 +69,9 @@ class BetAmountModal(discord.ui.Modal, title="Place Your Bet"):
                     return
                 
                 # Check wager status
-                if wager.status != WagerStatus.OPEN:
+                if wager.status != WAGER_STATUS_OPEN:
                     await interaction.response.send_message(
-                        f"❌ This wager is {wager.status.value}. You cannot place bets on it.",
+                        f"❌ This wager is {wager.status}. You cannot place bets on it.",
                         ephemeral=True
                     )
                     return
@@ -102,7 +105,7 @@ class BetAmountModal(discord.ui.Modal, title="Place Your Bet"):
                     session,
                     interaction.user.id,
                     -amount,
-                    TransactionType.BET_PLACED,
+                    TRANSACTION_TYPE_BET_PLACED,
                     reference_id=None
                 )
                 
@@ -122,7 +125,7 @@ class BetAmountModal(discord.ui.Modal, title="Place Your Bet"):
                 transaction_result = await session.execute(
                     select(Transaction)
                     .where(Transaction.user_id == interaction.user.id)
-                    .where(Transaction.transaction_type == TransactionType.BET_PLACED)
+                    .where(Transaction.transaction_type == TRANSACTION_TYPE_BET_PLACED)
                     .order_by(Transaction.created_at.desc())
                     .limit(1)
                 )
@@ -196,9 +199,9 @@ class WagerOptionView(discord.ui.View):
                     )
                     return
                 
-                if wager.status != WagerStatus.OPEN:
+                if wager.status != WAGER_STATUS_OPEN:
                     await interaction.response.send_message(
-                        f"❌ This wager is {wager.status.value}. You cannot place bets on it.",
+                        f"❌ This wager is {wager.status}. You cannot place bets on it.",
                         ephemeral=True
                     )
                     return
@@ -256,7 +259,7 @@ async def update_wager_message(bot: commands.Bot, wager_id: int):
             
             # Create view with buttons (always create, but disable if closed/resolved)
             view = WagerOptionView(wager.wager_id, wager.options, bot)
-            if wager.status != WagerStatus.OPEN:
+            if wager.status != WAGER_STATUS_OPEN:
                 # Disable all buttons if wager is not open
                 for item in view.children:
                     item.disabled = True
@@ -320,9 +323,9 @@ class BettingCog(commands.Cog):
                     return
                 
                 # Check wager status
-                if wager.status != WagerStatus.OPEN:
+                if wager.status != WAGER_STATUS_OPEN:
                     await interaction.response.send_message(
-                        f"❌ This wager is {wager.status.value}. You cannot place bets on it.",
+                        f"❌ This wager is {wager.status}. You cannot place bets on it.",
                         ephemeral=True
                     )
                     return
@@ -364,7 +367,7 @@ class BettingCog(commands.Cog):
                     session,
                     interaction.user.id,
                     -amount,
-                    TransactionType.BET_PLACED,
+                    TRANSACTION_TYPE_BET_PLACED,
                     reference_id=None  # Will be updated after bet is created
                 )
                 
@@ -384,7 +387,7 @@ class BettingCog(commands.Cog):
                 transaction_result = await session.execute(
                     select(Transaction)
                     .where(Transaction.user_id == interaction.user.id)
-                    .where(Transaction.transaction_type == TransactionType.BET_PLACED)
+                    .where(Transaction.transaction_type == TRANSACTION_TYPE_BET_PLACED)
                     .order_by(Transaction.created_at.desc())
                     .limit(1)
                 )
@@ -423,7 +426,7 @@ class BettingCog(commands.Cog):
                     select(Bet)
                     .join(Wager)
                     .where(Bet.user_id == interaction.user.id)
-                    .where(Wager.status == WagerStatus.OPEN)
+                    .where(Wager.status == WAGER_STATUS_OPEN)
                     .options(selectinload(Bet.wager))
                     .order_by(Bet.created_at.desc())
                 )

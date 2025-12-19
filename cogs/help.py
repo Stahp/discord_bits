@@ -77,3 +77,4 @@ async def setup(bot: commands.Bot):
     """Setup function for the cog."""
     await bot.add_cog(HelpCog(bot))
 
+

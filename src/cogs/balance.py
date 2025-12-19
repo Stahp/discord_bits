@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from src import config
 from src.database.database import get_session, get_user, update_balance
-from src.database.models import TransactionType
+from src.database.models import TRANSACTION_TYPE_DAILY_REWARD
 from src.utils.formatters import format_bits, format_balance_embed
 
 
@@ -61,7 +61,7 @@ class BalanceCog(commands.Cog):
                     session,
                     interaction.user.id,
                     config.DAILY_REWARD_AMOUNT,
-                    TransactionType.DAILY_REWARD
+                    TRANSACTION_TYPE_DAILY_REWARD
                 )
                 
                 embed = discord.Embed(
