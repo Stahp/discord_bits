@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 async def get_or_create_wager_channel(bot: commands.Bot, guild: discord.Guild, session) -> discord.TextChannel:
     """Get or create the wager channel for a guild."""
-    from database.models import GuildSettings
-    
     # First check environment variable (global setting)
     if config.WAGER_CHANNEL_ID:
         channel = bot.get_channel(config.WAGER_CHANNEL_ID)

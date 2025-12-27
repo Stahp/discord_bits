@@ -121,7 +121,7 @@ class BetAmountModal(discord.ui.Modal, title="Place Your Bet"):
                 await session.refresh(bet)
                 
                 # Update transaction reference
-                from database.models import Transaction
+                from src.database.models import Transaction
                 transaction_result = await session.execute(
                     select(Transaction)
                     .where(Transaction.user_id == interaction.user.id)
@@ -383,7 +383,7 @@ class BettingCog(commands.Cog):
                 await session.refresh(bet)
                 
                 # Update transaction reference
-                from database.models import Transaction
+                from src.database.models import Transaction
                 transaction_result = await session.execute(
                     select(Transaction)
                     .where(Transaction.user_id == interaction.user.id)

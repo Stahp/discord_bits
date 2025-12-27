@@ -10,7 +10,7 @@ def format_bits(amount: int) -> str:
 
 def format_wager_embed(wager, bets_by_option=None, show_stats=True) -> discord.Embed:
     """Format a wager as an embed with live betting statistics."""
-    from database.models import WAGER_STATUS_OPEN, WAGER_STATUS_RESOLVED
+    from src.database.models import WAGER_STATUS_OPEN, WAGER_STATUS_RESOLVED
     
     embed = discord.Embed(
         title=f"🎲 {wager.title}",
